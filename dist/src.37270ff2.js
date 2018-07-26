@@ -104,6 +104,23 @@ parcelRequire = (function (modules, cache, entry, globalName) {
   // Override the current require with this new one
   return newRequire;
 })({"index.ts":[function(require,module,exports) {
+var __extends = this && this.__extends || function () {
+    var extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
+        d.__proto__ = b;
+    } || function (d, b) {
+        for (var p in b) {
+            if (b.hasOwnProperty(p)) d[p] = b[p];
+        }
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() {
+            this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+}();
+// PVector2D with a nicer name.
 var Vec2D = /** @class */function () {
     function Vec2D(x, y) {
         if (x === void 0) {
@@ -115,175 +132,127 @@ var Vec2D = /** @class */function () {
         this.x = x;
         this.y = y;
     }
+    Vec2D.prototype.draw = function (ctx, size) {
+        if (size === void 0) {
+            size = 2;
+        }
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, size, 0, Math.PI * 2, true);
+        ctx.fill();
+    };
     return Vec2D;
 }();
-var Entity = /** @class */function () {
-    function Entity(x, y) {
-        if (x === void 0) {
-            x = 0;
-        }
-        if (y === void 0) {
-            y = 0;
-        }
-        this.position = new Vec2D(x, y);
-        this.velocity = new Vec2D(0, 0);
-        this.mass = 0.1;
-        this.radius = 15;
-        this.restitution = -0.7;
+var Shape2D = /** @class */function () {
+    function Shape2D() {
+        this.position = new Vec2D(0, 0);
     }
-    return Entity;
+    return Shape2D;
 }();
-var Wall = /** @class */function () {
-    function Wall(x, y, type) {
-        if (x === void 0) {
-            x = 0;
-        }
-        if (y === void 0) {
-            y = 0;
-        }
-        if (type === void 0) {
-            type = "ground";
-        }
-        this.position = new Vec2D(x, y);
-        this.from = -1000;
-        this.to = 1000;
-        this.type = type;
-        this.friction = 1.01;
+var Box2D = /** @class */function (_super) {
+    __extends(Box2D, _super);
+    function Box2D(from, to) {
+        var _this = _super.call(this) || this;
+        _this.from = from;
+        _this.to = to;
+        return _this;
     }
-    Wall.prototype.relative = function () {
-        if (this.type === "ground") {
-            var x1 = this.position.x + this.from;
-            var x2 = this.position.y + this.to;
-            return { from: x1, to: x2 };
+    Box2D.prototype.contains = function (point) {
+        var from = this.from;
+        var to = this.to;
+        from.x += this.position.x;
+        from.y += this.position.y;
+        to.x += this.position.x;
+        to.y += this.position.y;
+        if (from.x < point.x && point.x < to.x && from.y < point.y && point.y < to.y) {
+            return true;
         } else {
-            return { from: this.from, to: this.to };
+            return false;
         }
     };
-    return Wall;
-}();
-function main() {
-    // Constants
-    var FRAMERATE = 1 / 60;
-    var FRAMEDELAY = FRAMERATE * 1000;
-    var Cd = 0.47;
-    var rho = 1.22;
-    // TODO: Make A part of loop.
-    var radius = 15;
-    var A = Math.PI * radius * radius / 10000; // m^2
-    var ag = 9.81;
-    // Setup
-    var canvas = document.getElementById("canvas");
-    var ctx = canvas.getContext("2d");
-    var entities = [];
-    var walls = [];
-    entities.push(new Entity(canvas.width / 2, 0));
-    walls.push(new Wall(canvas.height, canvas.width / 2));
-    ctx.fillStyle = 'red';
-    ctx.strokeStyle = 'black';
-    // setInterval(loop, FRAMEDELAY)
-    window.addEventListener('keydown', handleInput, false);
-    loop();
-    function loop() {
-        for (var _i = 0, entities_1 = entities; _i < entities_1.length; _i++) {
-            var entity = entities_1[_i];
-            gravityCalc(entity);
-            scanCollisions(entity);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawEntity(entity);
-            setInterval(function () {}, FRAMEDELAY);
-            drawWalls();
+    Box2D.prototype.draw = function (ctx) {
+        ctx.beginPath();
+        ctx.rect(this.position.x, this.position.y, this.to.x - this.from.x, this.to.y - this.from.x);
+        ctx.stroke();
+    };
+    return Box2D;
+}(Shape2D);
+var Polygon2D = /** @class */function (_super) {
+    __extends(Polygon2D, _super);
+    function Polygon2D(points) {
+        if (points === void 0) {
+            points = [];
         }
-        requestAnimationFrame(loop);
+        var _this = _super.call(this) || this;
+        _this.points = points;
+        return _this;
     }
-    function gravityCalc(entity) {
-        var Fx = -0.5 * Cd * A * rho * entity.velocity.x * entity.velocity.x * entity.velocity.x / Math.abs(entity.velocity.x);
-        var Fy = -0.5 * Cd * A * rho * entity.velocity.y * entity.velocity.y * entity.velocity.y / Math.abs(entity.velocity.y);
-        if (isNaN(Fx)) {
-            Fx = 0;
-        }
-        if (isNaN(Fy)) {
-            Fy = 0;
-        }
-        var ax = Fx / entity.mass;
-        var ay = ag + Fy / entity.mass;
-        entity.velocity.x += ax * FRAMERATE;
-        entity.velocity.y += ay * FRAMERATE;
-        entity.position.x += entity.velocity.x * FRAMERATE * 100;
-        entity.position.y += entity.velocity.y * FRAMERATE * 100;
-        return entity;
-    }
-    function scanCollisions(entity) {
-        for (var _i = 0, walls_1 = walls; _i < walls_1.length; _i++) {
-            var wall = walls_1[_i];
-            switch (wall.type) {
-                case "ground":
-                    {
-                        if (entity.position.y + entity.radius > wall.position.y) {
-                            if (wall.relative().from < entity.position.x && entity.position.x < wall.relative().to) {
-                                entity.velocity.y *= entity.restitution;
-                                // entity.velocity.x -= entity.velocity.x / wall.friction
-                                // Temporary bad friction
-                                // TODO: Redo friction.
-                                entity.velocity.x /= wall.friction;
-                                entity.position.y = wall.position.y - entity.radius;
-                            }
-                        }
-                        break;
-                    }
-                default:
-                    {
-                        break;
-                    }
+    Polygon2D.prototype.boundingBox = function () {
+        var min = new Vec2D();
+        var max = new Vec2D();
+        for (var _i = 0, _a = this.points; _i < _a.length; _i++) {
+            var point_1 = _a[_i];
+            if (point_1.x < min.x) {
+                min.x = point_1.x;
+            } else if (point_1.x > max.x) {
+                max.x = point_1.x;
+            }
+            if (point_1.y < min.y) {
+                min.y = point_1.y;
+            } else if (point_1.y > max.y) {
+                max.y = point_1.y;
             }
         }
-    }
-    function drawEntity(entity) {
+        min.x += this.position.x;
+        max.x += this.position.x;
+        min.y += this.position.y;
+        max.y += this.position.y;
+        var box = new Box2D(min, max);
+        return box;
+    };
+    Polygon2D.prototype.contains = function (point) {
+        if (this.boundingBox().contains(point)) {
+            var inside = false;
+            for (var i = 0, n = this.points.length - 1; i < this.points.length; n = i++) {
+                var vec = this.points[i];
+                var vecNext = this.points[n];
+                vec.x += this.position.x;
+                vec.y += this.position.y;
+                vecNext.x += this.position.x;
+                vecNext.y += this.position.y;
+                if (vec.y > point.y != vecNext.y > point.y && point.x < (vecNext.x - vec.x) * (point.y - vec.y) / (vecNext.y - vec.y) + vec.x) inside = !inside;
+            }
+            return inside;
+        } else {
+            return false;
+        }
+    };
+    Polygon2D.prototype.draw = function (ctx) {
         ctx.beginPath();
-        ctx.arc(entity.position.x, entity.position.y, entity.radius, 0, Math.PI * 2, true);
-        ctx.fill();
-        ctx.closePath();
-    }
-    function drawWalls() {
-        for (var _i = 0, walls_2 = walls; _i < walls_2.length; _i++) {
-            var wall = walls_2[_i];
-            ctx.beginPath();
-            ctx.moveTo(wall.relative().from, wall.position.y);
-            ctx.lineTo(wall.relative().to, wall.position.y);
-            ctx.stroke();
+        for (var _i = 0, _a = this.points; _i < _a.length; _i++) {
+            var point_2 = _a[_i];
+            ctx.lineTo(point_2.x + this.position.x, point_2.y + this.position.y);
         }
-    }
-    function handleInput(event) {
-        switch (event.keyCode) {
-            // Left
-            case 37:
-                {
-                    entities[0].velocity.x -= 5;
-                    break;
-                }
-            // Up
-            case 38:
-                {
-                    entities[0].velocity.y -= 5;
-                    break;
-                }
-            // Right
-            case 39:
-                {
-                    entities[0].velocity.x += 5;
-                    break;
-                }
-            // Down
-            case 40:
-                {
-                    entities[0].velocity.y += 5;
-                    break;
-                }
-            default:
-                break;
-        }
-    }
-}
-main();
+        ctx.lineTo(this.points[0].x + this.position.x, this.points[0].y + this.position.y);
+        ctx.stroke();
+    };
+    return Polygon2D;
+}(Shape2D);
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var vertices = [];
+vertices[0] = new Vec2D(0, 0); // set X/Y position
+vertices[1] = new Vec2D(200, 30);
+vertices[2] = new Vec2D(150, 200);
+vertices[3] = new Vec2D(50, 200);
+var shape = new Polygon2D(vertices);
+shape.position.x = 200;
+shape.position.y = 200;
+shape.draw(ctx);
+var point = new Vec2D(250, 255);
+ctx.fillStyle = "red";
+point.draw(ctx);
+ctx.fillStyle = "black";
+console.log(shape.contains(point));
 },{}],"../../../../../.config/yarn/global/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -313,7 +282,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = '' || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + '43907' + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + '40289' + '/');
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);
 

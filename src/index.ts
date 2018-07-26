@@ -1,3 +1,4 @@
+// PVector2D with a nicer name.
 class Vec2D {
 	x: number
 	y: number
@@ -6,180 +7,136 @@ class Vec2D {
 		this.x = x
 		this.y = y
 	}
-}
 
-class Entity {
-	position: Vec2D
-	velocity: Vec2D
-	mass: number
-	radius: number
-	restitution: number
-
-	constructor(x: number = 0, y:number = 0) {
-		this.position = new Vec2D(x, y)
-		this.velocity = new Vec2D(0, 0)
-		this.mass = 0.1
-		this.radius = 15
-		this.restitution = -0.7
-	}
-}
-
-class Wall {
-	position: Vec2D
-	from: number
-	to: number
-	type: string
-	friction: number
-
-	constructor(x: number = 0, y: number = 0, type = "ground") {
-		this.position = new Vec2D(x, y)
-		this.from = -1000
-		this.to = 1000
-		this.type = type
-		this.friction = 1.01
-	}
-
-	relative() {
-		if (this.type === "ground") {
-			let x1 = this.position.x + this.from
-			let x2 = this.position.y + this.to
-			return {from: x1, to: x2}
-		} else {
-			return {from: this.from, to: this.to}
-		}
-	}
-}
-
-function main() {
-	// Constants
-	const FRAMERATE  = 1 / 60
-	const FRAMEDELAY = FRAMERATE * 1000
-
-	const Cd = 0.47
-	const rho = 1.22
-
-	// TODO: Make A part of loop.
-	const radius = 15
-	const A = Math.PI * radius * radius / (10000) // m^2
-
-	const ag = 9.81
-
-	// Setup
-	const canvas = <HTMLCanvasElement>document.getElementById("canvas")
-	var ctx = canvas.getContext("2d")
-
-	var entities: Entity[] = []
-	var walls: Wall[] = []
-	entities.push(new Entity(canvas.width / 2, 0))
-	walls.push(new Wall(canvas.height, canvas.width / 2))
-
-	ctx.fillStyle = 'red'
-	ctx.strokeStyle = 'black'
-	// setInterval(loop, FRAMEDELAY)
-	window.addEventListener('keydown', handleInput,false);
-	loop()
-
-	function loop() {
-		for (let entity of entities) {
-			gravityCalc(entity)
-			scanCollisions(entity)
-			ctx.clearRect(0,0,canvas.width,canvas.height)
-			drawEntity(entity)
-			setInterval(() => {}, FRAMEDELAY)
-			drawWalls()
-		}
-		requestAnimationFrame(loop)
-	}
-
-	function gravityCalc(entity: Entity) {
-		let Fx = -0.5 * Cd * A * rho * entity.velocity.x * entity.velocity.x * entity.velocity.x / Math.abs(entity.velocity.x)
-		let Fy = -0.5 * Cd * A * rho * entity.velocity.y * entity.velocity.y * entity.velocity.y / Math.abs(entity.velocity.y)
-		
-		if (isNaN(Fx)) {
-			Fx = 0 
-		}
-
-		if (isNaN(Fy)){
-			Fy = 0
-		}
-
-		let ax = Fx / entity.mass
-		let ay = ag + (Fy / entity.mass)
-
-		entity.velocity.x += ax * FRAMERATE
-		entity.velocity.y += ay * FRAMERATE
-
-		entity.position.x += entity.velocity.x * FRAMERATE * 100 
-		entity.position.y += entity.velocity.y * FRAMERATE * 100
-		return entity
-	}
-
-	function scanCollisions(entity: Entity) {
-		for (let wall of walls) {
-			switch (wall.type) {
-				case "ground":{
-					if ((entity.position.y + entity.radius) > wall.position.y) {
-						if (wall.relative().from < entity.position.x && entity.position.x  < wall.relative().to) {
-							entity.velocity.y *= entity.restitution
-							// entity.velocity.x -= entity.velocity.x / wall.friction
-							// Temporary bad friction
-							// TODO: Redo friction.
-							entity.velocity.x /= wall.friction
-							entity.position.y = (wall.position.y - entity.radius)
-						}
-					}
-					break
-				}
-				default:{
-					break
-				}
-			}
-		}
-	}
-
-	function drawEntity(entity: Entity) {
+	draw (ctx, size = 2) {
 		ctx.beginPath()
-		ctx.arc(entity.position.x, entity.position.y, entity.radius, 0, Math.PI * 2, true)
+		ctx.arc(this.x, this.y, size, 0, Math.PI * 2, true);
 		ctx.fill()
-		ctx.closePath()
-	}
-
-	function drawWalls() {
-		for (let wall of walls) {
-			ctx.beginPath()
-			ctx.moveTo(wall.relative().from, wall.position.y)
-			ctx.lineTo(wall.relative().to, wall.position.y)
-			ctx.stroke()
-		}
-	}
-
-	function handleInput(event) {
-		switch (event.keyCode) {
-			// Left
-			case 37: {
-				entities[0].velocity.x -= 5
-				break
-			}
-			// Up
-		 	case 38: {
-		 		entities[0].velocity.y -= 5
-		 		break
-		 	}
-		 	// Right
-		 	case 39: {
-		 		entities[0].velocity.x += 5
-		 		break
-		 	}
-		 	// Down
-		 	case 40: {
-		 		entities[0].velocity.y += 5
-		 		break
-		 	}
-		 	default:
-		 		break
-		 }
-
 	}
 }
 
-main()
+class Shape2D {
+	position: Vec2D
+
+	constructor () {
+		this.position = new Vec2D(0, 0)
+	}
+}
+
+class Box2D extends Shape2D {
+	from: Vec2D
+	to: Vec2D
+
+	constructor (from: Vec2D, to: Vec2D) {
+		super()
+		this.from = from
+		this.to = to
+	}
+
+	contains (point: Vec2D): boolean {
+		let from = this.from
+		let to = this.to
+
+		from.x += this.position.x
+		from.y += this.position.y
+
+		to.x += this.position.x
+		to.y += this.position.y 
+
+		if (from.x < point.x && point.x < to.x && from.y < point.y && point.y < to.y) {
+			return true	
+		} else {
+			return false
+		}
+	}
+
+	draw (ctx) {
+		ctx.beginPath()
+		ctx.rect(this.position.x, this.position.y, this.to.x - this.from.x, this.to.y - this.from.x)
+		ctx.stroke()
+	}
+}
+
+class Polygon2D extends Shape2D {
+	points: Vec2D[]
+	constructor (points = []) {
+		super()
+		this.points = points
+	}
+
+	boundingBox(): Box2D {
+		const min = new Vec2D
+		const max = new Vec2D
+
+		for (const point of this.points) {
+			if (point.x < min.x) {
+				min.x = point.x
+			} else if (point.x > max.x) {
+				max.x = point.x
+			}
+
+			if (point.y < min.y) {
+				min.y = point.y
+			} else if (point.y > max.y) {
+				max.y = point.y
+			}
+		}
+		min.x += this.position.x
+		max.x += this.position.x
+
+		min.y += this.position.y
+		max.y += this.position.y
+
+		const box = new Box2D(min, max)
+		return box
+	}
+
+	contains(point: Vec2D): boolean {
+		if (this.boundingBox().contains(point)) {
+			let inside = false
+			for (let i = 0, n = this.points.length - 1; i < this.points.length; n = i++) {
+				let vec = this.points[i]
+				let vecNext = this.points[n]
+
+				vec.x += this.position.x
+				vec.y += this.position.y
+				vecNext.x += this.position.x
+				vecNext.y += this.position.y
+
+        if(((vec.y > point.y) != (vecNext.y > point.y)) && (point.x < (vecNext.x - vec.x) * (point.y - vec.y) / (vecNext.y - vec.y) + vec.x) ) inside = !inside;
+			}
+			return inside
+		} else {
+			return false
+		}
+	}
+
+	draw (ctx) {
+		ctx.beginPath()
+		for (let point of this.points) {
+			ctx.lineTo(point.x + this.position.x, point.y + this.position.y)
+		}
+		ctx.lineTo(this.points[0].x + this.position.x, this.points[0].y + this.position.y)
+		ctx.stroke()
+	}
+}
+
+
+ var canvas = <HTMLCanvasElement>document.getElementById("canvas");
+ var ctx = canvas.getContext("2d")
+
+let vertices: Vec2D[] = []
+vertices[0] = new Vec2D(0,0);     // set X/Y position
+vertices[1] = new Vec2D(200,30);
+vertices[2] = new Vec2D(150,200);
+vertices[3] = new Vec2D(50,200);
+
+let shape = new Polygon2D(vertices)
+shape.position.x = 200
+shape.position.y = 200
+shape.draw(ctx)
+let point = new Vec2D(250, 255)
+ctx.fillStyle = "red"
+point.draw(ctx)
+ctx.fillStyle = "black"
+console.log(shape.contains(point))
