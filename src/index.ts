@@ -8,7 +8,7 @@ class Vec2D {
 		this.y = y
 	}
 
-	draw (ctx, size = 2) {
+	draw (ctx: CanvasRenderingContext2D, size = 2) {
 		ctx.beginPath()
 		ctx.arc(this.x, this.y, size, 0, Math.PI * 2, true);
 		ctx.fill()
@@ -16,10 +16,10 @@ class Vec2D {
 }
 
 class Shape2D {
-	position: Vec2D
+	pos: Vec2D
 
 	constructor () {
-		this.position = new Vec2D(0, 0)
+		this.pos = new Vec2D(0, 0)
 	}
 }
 
@@ -37,11 +37,11 @@ class Box2D extends Shape2D {
 		let from = this.from
 		let to = this.to
 
-		from.x += this.position.x
-		from.y += this.position.y
+		from.x += this.pos.x
+		from.y += this.pos.y
 
-		to.x += this.position.x
-		to.y += this.position.y 
+		to.x += this.pos.x
+		to.y += this.pos.y 
 
 		if (from.x < point.x && point.x < to.x && from.y < point.y && point.y < to.y) {
 			return true	
@@ -52,7 +52,7 @@ class Box2D extends Shape2D {
 
 	draw (ctx) {
 		ctx.beginPath()
-		ctx.rect(this.position.x, this.position.y, this.to.x - this.from.x, this.to.y - this.from.x)
+		ctx.rect(this.pos.x, this.pos.y, this.to.x - this.from.x, this.to.y - this.from.x)
 		ctx.stroke()
 	}
 }
@@ -81,11 +81,11 @@ class Polygon2D extends Shape2D {
 				max.y = point.y
 			}
 		}
-		min.x += this.position.x
-		max.x += this.position.x
+		min.x += this.pos.x
+		max.x += this.pos.x
 
-		min.y += this.position.y
-		max.y += this.position.y
+		min.y += this.pos.y
+		max.y += this.pos.y
 
 		const box = new Box2D(min, max)
 		return box
@@ -98,10 +98,10 @@ class Polygon2D extends Shape2D {
 				let vec = this.points[i]
 				let vecNext = this.points[n]
 
-				vec.x += this.position.x
-				vec.y += this.position.y
-				vecNext.x += this.position.x
-				vecNext.y += this.position.y
+				vec.x += this.pos.x
+				vec.y += this.pos.y
+				vecNext.x += this.pos.x
+				vecNext.y += this.pos.y
 
         if(((vec.y > point.y) != (vecNext.y > point.y)) && (point.x < (vecNext.x - vec.x) * (point.y - vec.y) / (vecNext.y - vec.y) + vec.x) ) inside = !inside;
 			}
@@ -111,32 +111,92 @@ class Polygon2D extends Shape2D {
 		}
 	}
 
-	draw (ctx) {
+	draw(ctx) {
 		ctx.beginPath()
 		for (let point of this.points) {
-			ctx.lineTo(point.x + this.position.x, point.y + this.position.y)
+			ctx.lineTo(point.x + this.pos.x, point.y + this.pos.y)
 		}
-		ctx.lineTo(this.points[0].x + this.position.x, this.points[0].y + this.position.y)
+		ctx.lineTo(this.points[0].x + this.pos.x, this.points[0].y + this.pos.y)
 		ctx.stroke()
+	}
+
+}
+
+class Entity {
+	pos: Vec2D
+	weight: number
+	velocity: Vec2D
+
+	constructor(x = 0, y = 0) {
+		this.pos = new Vec2D(x, y)
+		this.weight = 10
+		this.velocity = new Vec2D(0, 0)
+	}
+
+	applyGravity(amount: number) {
+		this.velocity.y += this.weight * amount
+	}
+
+	applyForces() {
+		this.pos.x += this.velocity.x
+		this.pos.y += this.velocity.y
+
+		this.velocity = new Vec2D(0, 0)
+	}
+
+	draw (ctx: CanvasRenderingContext2D) {
+		this.pos.draw(ctx)
 	}
 }
 
 
- var canvas = <HTMLCanvasElement>document.getElementById("canvas");
- var ctx = canvas.getContext("2d")
+ var background = <HTMLCanvasElement>document.getElementById("background")
+ var foreground = <HTMLCanvasElement>document.getElementById("foreground")
+ var btx = background.getContext("2d")
+ var ftx = foreground.getContext("2d")
 
-let vertices: Vec2D[] = []
-vertices[0] = new Vec2D(0,0);     // set X/Y position
-vertices[1] = new Vec2D(200,30);
-vertices[2] = new Vec2D(150,200);
-vertices[3] = new Vec2D(50,200);
+let stage: Vec2D[] = []
+stage[0] = new Vec2D(0,0)
+stage[1] = new Vec2D(200,30)
+stage[2] = new Vec2D(150,200)
+stage[3] = new Vec2D(50,200)
 
-let shape = new Polygon2D(vertices)
-shape.position.x = 200
-shape.position.y = 200
-shape.draw(ctx)
-let point = new Vec2D(250, 255)
-ctx.fillStyle = "red"
-point.draw(ctx)
-ctx.fillStyle = "black"
-console.log(shape.contains(point))
+btx.strokeStyle = "white"
+var shape = new Polygon2D(stage)
+shape.pos.x = 200
+shape.pos.y = 200
+shape.draw(btx)
+
+btx.fillStyle = "red"
+var point = new Vec2D(250, 255)
+point.draw(btx)
+
+var ball = new Entity(250, 50)
+ball.draw(ftx)
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function animate() {
+	ftx.clearRect(0, 0, foreground.width, foreground.height)
+	ball.applyGravity(1)
+	ball.applyForces()
+
+	console.log(shape.contains(ball.pos))
+	console.log(ball.pos)
+
+	if (shape.contains(ball.pos) == true) {
+		ftx.fillStyle = "blue"
+		ftx.strokeStyle = "blue"
+	} else {
+		ftx.fillStyle = "red"
+		ftx.strokeStyle = "red"
+	}
+
+	ball.draw(ftx)
+	await sleep((1 / 60) * 10000)
+	window.requestAnimationFrame(animate)
+}
+
+animate()

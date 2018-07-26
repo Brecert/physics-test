@@ -120,6 +120,86 @@ var __extends = this && this.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
+var __awaiter = this && this.__awaiter || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) {
+            try {
+                step(generator.next(value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+        function rejected(value) {
+            try {
+                step(generator["throw"](value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+        function step(result) {
+            result.done ? resolve(result.value) : new P(function (resolve) {
+                resolve(result.value);
+            }).then(fulfilled, rejected);
+        }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = this && this.__generator || function (thisArg, body) {
+    var _ = { label: 0, sent: function sent() {
+            if (t[0] & 1) throw t[1];return t[1];
+        }, trys: [], ops: [] },
+        f,
+        y,
+        t,
+        g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function () {
+        return this;
+    }), g;
+    function verb(n) {
+        return function (v) {
+            return step([n, v]);
+        };
+    }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) {
+            try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0:case 1:
+                        t = op;break;
+                    case 4:
+                        _.label++;return { value: op[1], done: false };
+                    case 5:
+                        _.label++;y = op[1];op = [0];continue;
+                    case 7:
+                        op = _.ops.pop();_.trys.pop();continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+                            _ = 0;continue;
+                        }
+                        if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+                            _.label = op[1];break;
+                        }
+                        if (op[0] === 6 && _.label < t[1]) {
+                            _.label = t[1];t = op;break;
+                        }
+                        if (t && _.label < t[2]) {
+                            _.label = t[2];_.ops.push(op);break;
+                        }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop();continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) {
+                op = [6, e];y = 0;
+            } finally {
+                f = t = 0;
+            }
+        }if (op[0] & 5) throw op[1];return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 // PVector2D with a nicer name.
 var Vec2D = /** @class */function () {
     function Vec2D(x, y) {
@@ -144,7 +224,7 @@ var Vec2D = /** @class */function () {
 }();
 var Shape2D = /** @class */function () {
     function Shape2D() {
-        this.position = new Vec2D(0, 0);
+        this.pos = new Vec2D(0, 0);
     }
     return Shape2D;
 }();
@@ -159,10 +239,10 @@ var Box2D = /** @class */function (_super) {
     Box2D.prototype.contains = function (point) {
         var from = this.from;
         var to = this.to;
-        from.x += this.position.x;
-        from.y += this.position.y;
-        to.x += this.position.x;
-        to.y += this.position.y;
+        from.x += this.pos.x;
+        from.y += this.pos.y;
+        to.x += this.pos.x;
+        to.y += this.pos.y;
         if (from.x < point.x && point.x < to.x && from.y < point.y && point.y < to.y) {
             return true;
         } else {
@@ -171,7 +251,7 @@ var Box2D = /** @class */function (_super) {
     };
     Box2D.prototype.draw = function (ctx) {
         ctx.beginPath();
-        ctx.rect(this.position.x, this.position.y, this.to.x - this.from.x, this.to.y - this.from.x);
+        ctx.rect(this.pos.x, this.pos.y, this.to.x - this.from.x, this.to.y - this.from.x);
         ctx.stroke();
     };
     return Box2D;
@@ -202,10 +282,10 @@ var Polygon2D = /** @class */function (_super) {
                 max.y = point_1.y;
             }
         }
-        min.x += this.position.x;
-        max.x += this.position.x;
-        min.y += this.position.y;
-        max.y += this.position.y;
+        min.x += this.pos.x;
+        max.x += this.pos.x;
+        min.y += this.pos.y;
+        max.y += this.pos.y;
         var box = new Box2D(min, max);
         return box;
     };
@@ -215,10 +295,10 @@ var Polygon2D = /** @class */function (_super) {
             for (var i = 0, n = this.points.length - 1; i < this.points.length; n = i++) {
                 var vec = this.points[i];
                 var vecNext = this.points[n];
-                vec.x += this.position.x;
-                vec.y += this.position.y;
-                vecNext.x += this.position.x;
-                vecNext.y += this.position.y;
+                vec.x += this.pos.x;
+                vec.y += this.pos.y;
+                vecNext.x += this.pos.x;
+                vecNext.y += this.pos.y;
                 if (vec.y > point.y != vecNext.y > point.y && point.x < (vecNext.x - vec.x) * (point.y - vec.y) / (vecNext.y - vec.y) + vec.x) inside = !inside;
             }
             return inside;
@@ -230,29 +310,90 @@ var Polygon2D = /** @class */function (_super) {
         ctx.beginPath();
         for (var _i = 0, _a = this.points; _i < _a.length; _i++) {
             var point_2 = _a[_i];
-            ctx.lineTo(point_2.x + this.position.x, point_2.y + this.position.y);
+            ctx.lineTo(point_2.x + this.pos.x, point_2.y + this.pos.y);
         }
-        ctx.lineTo(this.points[0].x + this.position.x, this.points[0].y + this.position.y);
+        ctx.lineTo(this.points[0].x + this.pos.x, this.points[0].y + this.pos.y);
         ctx.stroke();
     };
     return Polygon2D;
 }(Shape2D);
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
-var vertices = [];
-vertices[0] = new Vec2D(0, 0); // set X/Y position
-vertices[1] = new Vec2D(200, 30);
-vertices[2] = new Vec2D(150, 200);
-vertices[3] = new Vec2D(50, 200);
-var shape = new Polygon2D(vertices);
-shape.position.x = 200;
-shape.position.y = 200;
-shape.draw(ctx);
+var Entity = /** @class */function () {
+    function Entity(x, y) {
+        if (x === void 0) {
+            x = 0;
+        }
+        if (y === void 0) {
+            y = 0;
+        }
+        this.pos = new Vec2D(x, y);
+        this.weight = 10;
+        this.velocity = new Vec2D(0, 0);
+    }
+    Entity.prototype.applyGravity = function (amount) {
+        this.velocity.y += this.weight * amount;
+    };
+    Entity.prototype.applyForces = function () {
+        this.pos.x += this.velocity.x;
+        this.pos.y += this.velocity.y;
+        this.velocity = new Vec2D(0, 0);
+    };
+    Entity.prototype.draw = function (ctx) {
+        this.pos.draw(ctx);
+    };
+    return Entity;
+}();
+var background = document.getElementById("background");
+var foreground = document.getElementById("foreground");
+var btx = background.getContext("2d");
+var ftx = foreground.getContext("2d");
+var stage = [];
+stage[0] = new Vec2D(0, 0);
+stage[1] = new Vec2D(200, 30);
+stage[2] = new Vec2D(150, 200);
+stage[3] = new Vec2D(50, 200);
+btx.strokeStyle = "white";
+var shape = new Polygon2D(stage);
+shape.pos.x = 200;
+shape.pos.y = 200;
+shape.draw(btx);
+btx.fillStyle = "red";
 var point = new Vec2D(250, 255);
-ctx.fillStyle = "red";
-point.draw(ctx);
-ctx.fillStyle = "black";
-console.log(shape.contains(point));
+point.draw(btx);
+var ball = new Entity(250, 50);
+ball.draw(ftx);
+function sleep(ms) {
+    return new Promise(function (resolve) {
+        return setTimeout(resolve, ms);
+    });
+}
+function animate() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    ftx.clearRect(0, 0, foreground.width, foreground.height);
+                    ball.applyGravity(1);
+                    ball.applyForces();
+                    console.log(shape.contains(ball.pos));
+                    console.log(ball.pos);
+                    if (shape.contains(ball.pos) == true) {
+                        ftx.fillStyle = "blue";
+                        ftx.strokeStyle = "blue";
+                    } else {
+                        ftx.fillStyle = "red";
+                        ftx.strokeStyle = "red";
+                    }
+                    ball.draw(ftx);
+                    return [4 /*yield*/, sleep(1 / 60 * 10000)];
+                case 1:
+                    _a.sent();
+                    window.requestAnimationFrame(animate);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+animate();
 },{}],"../../../../../.config/yarn/global/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
